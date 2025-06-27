@@ -104,4 +104,56 @@ To set up your Neon database:
 ## License
 
 MIT
+
+## Continuous Server Operation
+
+This application uses PM2 to ensure the server runs continuously, even after system restarts.
+
+### PM2 Server Management
+
+The server is configured to run automatically on system startup. To manage the server, you can use the provided `server-control.sh` script:
+
+```bash
+# Start the server
+./server-control.sh start
+
+# Stop the server
+./server-control.sh stop
+
+# Restart the server
+./server-control.sh restart
+
+# Check server status
+./server-control.sh status
+
+# View server logs
+./server-control.sh logs
+```
+
+### Manual PM2 Commands
+
+You can also use PM2 directly:
+
+```bash
+# Start the server
+pm2 start ecosystem.config.js
+
+# Stop the server
+pm2 stop neon-api-server
+
+# Restart the server
+pm2 restart neon-api-server
+
+# Monitor server status
+pm2 monit
+
+# View logs
+pm2 logs neon-api-server
+```
+
+With PM2, your server will:
+- Start automatically on system boot
+- Restart if it crashes
+- Keep running in the background
+
 # Artical
