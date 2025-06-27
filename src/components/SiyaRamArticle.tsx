@@ -54,10 +54,81 @@ const SiyaRamArticle: React.FC<SiyaRamArticleProps> = ({ onLogout }) => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [filteredArticles, setFilteredArticles] = useState<Article[]>([]);
   const [copiedArticleId, setCopiedArticleId] = useState<number | null>(null);
+  
+  // View mode state
+  const [isSmallView, setIsSmallView] = useState<boolean>(() => {
+    return localStorage.getItem('viewMode') === 'small' || false;
+  });
+  
+  // Mobile menu state
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
+  
+  // Header scroll state
+  const [isScrolled, setIsScrolled] = useState<boolean>(false);
 
   useEffect(() => {
     fetchArticles();
   }, []);
+  
+  // Header scroll effect
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 10) {
+        setIsScrolled(true);
+      } else {
+        setIsScrolled(false);
+      }
+    };
+    
+    window.addEventListener('scroll', handleScroll);
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
+
+  // Mobile menu toggle functionality
+  useEffect(() => {
+    const mobileMenuButton = document.getElementById('mobile-menu-button');
+    const navMenu = document.getElementById('nav-menu');
+    
+    const handleMobileMenuToggle = () => {
+      setIsMobileMenuOpen(prevState => !prevState);
+      if (navMenu) {
+        if (isMobileMenuOpen) {
+          navMenu.classList.add('hidden');
+          navMenu.classList.remove('flex');
+        } else {
+          navMenu.classList.remove('hidden');
+          navMenu.classList.add('flex');
+        }
+      }
+    };
+    
+    if (mobileMenuButton) {
+      mobileMenuButton.addEventListener('click', handleMobileMenuToggle);
+    }
+    
+    // Handle resize to show menu on larger screens
+    const handleResize = () => {
+      if (window.innerWidth >= 640 && navMenu) { // 640px is the sm breakpoint in Tailwind
+        navMenu.classList.remove('hidden');
+        navMenu.classList.add('flex');
+      } else if (window.innerWidth < 640 && navMenu && !isMobileMenuOpen) {
+        navMenu.classList.add('hidden');
+        navMenu.classList.remove('flex');
+      }
+    };
+    
+    window.addEventListener('resize', handleResize);
+    
+    return () => {
+      if (mobileMenuButton) {
+        mobileMenuButton.removeEventListener('click', handleMobileMenuToggle);
+      }
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [isMobileMenuOpen]);
 
   // Apply dark mode to document
   useEffect(() => {
@@ -172,7 +243,9 @@ const SiyaRamArticle: React.FC<SiyaRamArticleProps> = ({ onLogout }) => {
 
     if (e.dataTransfer.files) {
       const filesArray = Array.from(e.dataTransfer.files);
-      const imageFiles = filesArray.filter(file => file.type.startsWith('image/'));
+      const imageFiles = filesArray.filter(file => 
+        file.type.startsWith('image/') || file.name.toLowerCase().endsWith('.heic')
+      );
 
       if (imageFiles.length > 0) {
         setSelectedFiles(prev => [...prev, ...imageFiles]);
@@ -264,6 +337,11 @@ const SiyaRamArticle: React.FC<SiyaRamArticleProps> = ({ onLogout }) => {
   const getFilePreview = (file: File) => {
     if (file.type.startsWith('image/')) {
       return URL.createObjectURL(file);
+    }
+    // For HEIC files that might not have proper mime type
+    if (file.name.toLowerCase().endsWith('.heic')) {
+      // Return a placeholder for HEIC files
+      return null;
     }
     return null;
   };
@@ -501,7 +579,7 @@ const SiyaRamArticle: React.FC<SiyaRamArticleProps> = ({ onLogout }) => {
                           <input
                             id="images"
                             type="file"
-                            accept="image/*"
+                            accept="image/*,.heic"
                             multiple
                             onChange={handleFileChange}
                             disabled={isUploading}
@@ -510,7 +588,7 @@ const SiyaRamArticle: React.FC<SiyaRamArticleProps> = ({ onLogout }) => {
                         </label>
                         <p className="pl-2 self-center">or drag and drop</p>
                       </div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">PNG, JPG, GIF up to 10MB</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">PNG, JPG, GIF, HEIC up to 10MB</p>
                       {editMode && (
                         <p className="text-xs text-amber-600 dark:text-amber-400 mt-2 font-medium">
                           Note: Uploading new images will replace all existing images for this article.
@@ -532,9 +610,18 @@ const SiyaRamArticle: React.FC<SiyaRamArticleProps> = ({ onLogout }) => {
                                   <img src={preview} alt={file.name} className="object-cover" />
                                 ) : (
                                   <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
-                                    <svg className="h-10 w-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                                    </svg>
+                                    {file.name.toLowerCase().endsWith('.heic') ? (
+                                      <div className="flex flex-col items-center">
+                                        <svg className="h-10 w-10" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                          <path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                        </svg>
+                                        <span className="text-xs mt-1">HEIC</span>
+                                      </div>
+                                    ) : (
+                                      <svg className="h-10 w-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                      </svg>
+                                    )}
                                   </div>
                                 )}
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
@@ -804,6 +891,13 @@ const SiyaRamArticle: React.FC<SiyaRamArticleProps> = ({ onLogout }) => {
     }
   };
 
+  // Add new function to toggle view mode
+  const toggleViewMode = () => {
+    const newViewMode = !isSmallView;
+    setIsSmallView(newViewMode);
+    localStorage.setItem('viewMode', newViewMode ? 'small' : 'large');
+  };
+
   const renderArticleList = () => {
     if (isLoadingList) {
       return (
@@ -888,11 +982,18 @@ const SiyaRamArticle: React.FC<SiyaRamArticleProps> = ({ onLogout }) => {
     const displayedArticles = searchQuery ? filteredArticles : articles;
 
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+      <div className={`grid gap-4 ${isSmallView 
+        ? 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5' 
+        : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'}`}>
         {displayedArticles.map(article => (
-          <div key={article.id} className="group bg-white dark:bg-gray-800 overflow-hidden shadow-xl rounded-2xl border border-gray-100 dark:border-gray-700 transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 backdrop-blur-sm bg-white/90 dark:bg-gray-800/90">
-            <div className="px-6 py-5 sm:px-8 border-b border-gray-100 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-750">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center">
+          <div key={article.id} className={`group bg-white dark:bg-gray-800 overflow-hidden ${isSmallView 
+            ? 'shadow-md rounded-xl border border-gray-100 dark:border-gray-700 hover:shadow-lg' 
+            : 'shadow-xl rounded-2xl border border-gray-100 dark:border-gray-700 transition-all duration-300 hover:shadow-2xl hover:-translate-y-2'} 
+            backdrop-blur-sm bg-white/90 dark:bg-gray-800/90`}>
+            <div className={`${isSmallView 
+              ? 'px-3 py-2 border-b border-gray-100 dark:border-gray-700' 
+              : 'px-6 py-5 sm:px-8 border-b border-gray-100 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-750'}`}>
+              <h3 className={`${isSmallView ? 'text-sm' : 'text-xl'} font-bold text-gray-900 dark:text-white flex items-center`}>
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-600 to-blue-600 dark:from-violet-400 dark:to-blue-400">
                   #{article.article_number}
                 </span>
@@ -901,35 +1002,37 @@ const SiyaRamArticle: React.FC<SiyaRamArticleProps> = ({ onLogout }) => {
                     e.stopPropagation();
                     copyToClipboard(article.article_number, article.id);
                   }}
-                  className="ml-2 p-1 rounded-md text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  className={`ml-2 p-1 rounded-md text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors`}
                   title="Copy article number"
                 >
                   {copiedArticleId === article.id ? (
-                    <svg className="h-4 w-4 text-green-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className={`${isSmallView ? 'h-3 w-3' : 'h-4 w-4'} text-green-500`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
                     </svg>
                   ) : (
-                    <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className={`${isSmallView ? 'h-3 w-3' : 'h-4 w-4'}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2" />
                     </svg>
                   )}
                 </button>
               </h3>
-              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                {formatDate(article.created_at)}
-              </p>
+              {!isSmallView && (
+                <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  {formatDate(article.created_at)}
+                </p>
+              )}
             </div>
 
-            <div className="p-6 sm:p-8">
+            <div className={`${isSmallView ? 'p-2' : 'p-6 sm:p-8'}`}>
               {article.images && article.images.length > 0 ? (
-                <div className="grid grid-cols-2 gap-4">
-                  {article.images.map((image, index) => (
+                <div className={`grid ${isSmallView ? 'grid-cols-2 gap-1' : 'grid-cols-2 gap-4'}`}>
+                  {article.images.slice(0, isSmallView ? 4 : article.images.length).map((image, index) => (
                     <div
                       key={index}
-                      className="relative h-36 bg-gray-100 dark:bg-gray-700 rounded-xl overflow-hidden shadow-md transition-transform duration-200 hover:scale-105 group-hover:shadow-lg cursor-pointer"
+                      className={`relative ${isSmallView ? 'h-16' : 'h-36'} bg-gray-100 dark:bg-gray-700 rounded-xl overflow-hidden shadow-md transition-transform duration-200 hover:scale-105 group-hover:shadow-lg cursor-pointer`}
                       onClick={() => openImageViewer(article, index)}
                     >
                       <img
@@ -938,61 +1041,71 @@ const SiyaRamArticle: React.FC<SiyaRamArticleProps> = ({ onLogout }) => {
                         className="w-full h-full object-cover"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
-                        <div className="bg-white/20 backdrop-blur-sm p-2 rounded-full transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
-                          <svg className="h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <div className={`bg-white/20 backdrop-blur-sm ${isSmallView ? 'p-1' : 'p-2'} rounded-full transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300`}>
+                          <svg className={`${isSmallView ? 'h-3 w-3' : 'h-5 w-5'} text-white`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
                           </svg>
                         </div>
                       </div>
                     </div>
                   ))}
+                  {isSmallView && article.images.length > 4 && (
+                    <div 
+                      className="relative h-16 bg-gray-100 dark:bg-gray-700 rounded-xl overflow-hidden shadow-md flex items-center justify-center cursor-pointer"
+                      onClick={() => openImageViewer(article, 4)}
+                    >
+                      <div className="text-gray-500 dark:text-gray-300 font-medium text-sm">
+                        +{article.images.length - 4}
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : (
-                <div className="text-center py-10 px-6">
-                  <div className="inline-block p-3 bg-gray-100 dark:bg-gray-700 rounded-full mb-3">
-                    <svg className="h-6 w-6 text-gray-400 dark:text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className={`text-center ${isSmallView ? 'py-2 px-2' : 'py-10 px-6'}`}>
+                  <div className={`inline-block ${isSmallView ? 'p-1' : 'p-3'} bg-gray-100 dark:bg-gray-700 rounded-full mb-1`}>
+                    <svg className={`${isSmallView ? 'h-3 w-3' : 'h-6 w-6'} text-gray-400 dark:text-gray-500`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
                   </div>
-                  <p className="text-gray-500 dark:text-gray-400 italic">No images available</p>
+                  <p className={`${isSmallView ? 'text-xs' : 'text-sm'} text-gray-500 dark:text-gray-400 italic`}>No images</p>
                 </div>
               )}
             </div>
 
-            <div className="border-t border-gray-100 dark:border-gray-700 px-6 py-4 sm:px-8 flex space-x-3 justify-end bg-gray-50 dark:bg-gray-800/50">
+            <div className={`border-t border-gray-100 dark:border-gray-700 ${isSmallView ? 'px-2 py-2' : 'px-6 py-4 sm:px-8'} flex ${isSmallView ? 'space-x-1' : 'space-x-3'} justify-end bg-gray-50 dark:bg-gray-800/50`}>
               <button
-                className="inline-flex items-center px-4 py-2 border border-gray-200 dark:border-gray-700 shadow-md text-sm font-medium rounded-full text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200"
+                className={`inline-flex items-center ${isSmallView ? 'px-2 py-1 text-xs' : 'px-4 py-2 text-sm'} border border-gray-200 dark:border-gray-700 shadow-md font-medium rounded-full text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200`}
                 onClick={() => openModal(article)}
                 aria-label="Edit article"
               >
-                <svg className="h-4 w-4 mr-1.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className={`${isSmallView ? 'h-3 w-3' : 'h-4 w-4'} ${isSmallView ? '' : 'mr-1.5'}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
-                Edit
+                {!isSmallView && "Edit"}
               </button>
               {/* Download button */}
               {article.images && article.images.length > 0 && (
                 <button
                   type="button"
                   onClick={() => downloadAllImages(article)}
-                  className="inline-flex items-center px-4 py-2 border border-blue-200 dark:border-blue-700 shadow-md text-sm font-medium rounded-full text-blue-700 dark:text-blue-300 bg-white dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
+                  className={`inline-flex items-center ${isSmallView ? 'px-2 py-1 text-xs' : 'px-4 py-2 text-sm'} border border-blue-200 dark:border-blue-700 shadow-md font-medium rounded-full text-blue-700 dark:text-blue-300 bg-white dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200`}
                   aria-label="Download images"
                 >
-                  <svg className="h-4 w-4 mr-1.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className={`${isSmallView ? 'h-3 w-3' : 'h-4 w-4'} ${isSmallView ? '' : 'mr-1.5'}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                   </svg>
-                  Download
+                  {!isSmallView && "Download"}
                 </button>
               )}
               <button
-                className="inline-flex items-center px-4 py-2 border border-red-100 dark:border-red-900/30 shadow-md text-sm font-medium rounded-full text-red-700 dark:text-red-400 bg-white dark:bg-gray-800 hover:bg-red-50 dark:hover:bg-red-900/20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200"
+                className={`inline-flex items-center ${isSmallView ? 'px-2 py-1 text-xs' : 'px-4 py-2 text-sm'} border border-red-100 dark:border-red-900/30 shadow-md font-medium rounded-full text-red-700 dark:text-red-400 bg-white dark:bg-gray-800 hover:bg-red-50 dark:hover:bg-red-900/20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200`}
                 onClick={() => openDeleteModal(article.id)}
                 aria-label="Delete article"
               >
-                <svg className="h-4 w-4 mr-1.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className={`${isSmallView ? 'h-3 w-3' : 'h-4 w-4'} ${isSmallView ? '' : 'mr-1.5'}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                 </svg>
-                Delete
+                {!isSmallView && "Delete"}
               </button>
             </div>
           </div>
@@ -1003,19 +1116,26 @@ const SiyaRamArticle: React.FC<SiyaRamArticleProps> = ({ onLogout }) => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100 dark:from-gray-900 dark:to-slate-900 transition-colors duration-300">
-      <header className="bg-gradient-to-r from-violet-600 via-indigo-600 to-blue-600 shadow-lg py-6 px-6 relative overflow-hidden">
+      <header className={`sticky top-0 z-40 bg-gradient-to-r from-violet-600 via-indigo-600 to-blue-600 shadow-lg py-6 px-4 sm:px-6 relative overflow-hidden transition-all duration-300 ${isScrolled ? 'py-3 shadow-2xl' : 'py-6'}`}>
         <div className="absolute inset-0 bg-grid-white/[0.1] bg-[length:20px_20px]"></div>
         <div className="absolute inset-0 bg-gradient-to-b from-black/10 to-transparent"></div>
-        <div className="max-w-7xl mx-auto flex justify-between items-center relative z-10">
-          <div className="flex items-center space-x-4">
+        <div className="max-w-7xl mx-auto flex flex-wrap justify-between items-center relative z-10">
+          <div className="flex items-center space-x-4 w-full sm:w-auto justify-between sm:justify-start mb-4 sm:mb-0">
             <div className="bg-white/20 backdrop-blur-md p-2 rounded-xl shadow-xl">
-              <img src="/siyaram-lace.png" alt="SiyaRam Logo" className="h-12 w-auto rounded-lg" />
+              <img src="/siyaram-lace.png" alt="SiyaRam Logo" className="h-10 sm:h-12 w-auto rounded-lg" />
+            </div>
+            <div className="block sm:hidden">
+              <button id="mobile-menu-button" className="text-white p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors">
+                <svg className="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16m-7 6h7" />
+                </svg>
+              </button>
             </div>
           </div>
 
-          <div className="flex items-center space-x-4">
+          <div id="nav-menu" className="hidden sm:flex w-full sm:w-auto items-center space-x-2 sm:space-x-4 flex-wrap sm:flex-nowrap">
             {/* Search Bar */}
-            <div className="relative hidden md:block">
+            <div className="relative w-full sm:w-auto mb-3 sm:mb-0 order-3 sm:order-none">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <svg className="h-5 w-5 text-gray-300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="11" cy="11" r="8"></circle>
@@ -1027,7 +1147,7 @@ const SiyaRamArticle: React.FC<SiyaRamArticleProps> = ({ onLogout }) => {
                 placeholder="Search articles..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="bg-white/10 backdrop-blur-md border border-white/20 rounded-full py-2 pl-10 pr-4 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-transparent"
+                className="w-full sm:w-auto bg-white/10 backdrop-blur-md border border-white/20 rounded-full py-2 pl-10 pr-4 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-transparent"
               />
               {searchQuery && (
                 <button
@@ -1040,6 +1160,23 @@ const SiyaRamArticle: React.FC<SiyaRamArticleProps> = ({ onLogout }) => {
                 </button>
               )}
             </div>
+
+            {/* View toggle button */}
+            <button
+              className="inline-flex items-center px-3 py-2 border border-gray-200 dark:border-gray-700 shadow-lg text-sm font-medium rounded-full text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200"
+              onClick={toggleViewMode}
+              title={isSmallView ? "Switch to large view" : "Switch to compact view"}
+            >
+              {isSmallView ? (
+                <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16m-7 6h7" />
+                </svg>
+              ) : (
+                <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                </svg>
+              )}
+            </button>
 
             {/* Dark Mode Toggle */}
             <button
@@ -1059,23 +1196,26 @@ const SiyaRamArticle: React.FC<SiyaRamArticleProps> = ({ onLogout }) => {
             </button>
 
             <button
-              className="inline-flex items-center px-5 py-2.5 border border-white/20 rounded-full shadow-xl text-sm font-medium text-white bg-white/10 hover:bg-white/20 backdrop-blur-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white/50 transition-all duration-200 transform hover:scale-105"
+              className="inline-flex items-center px-4 py-2 sm:px-5 sm:py-2.5 border border-white/20 rounded-full shadow-xl text-sm font-medium text-white bg-white/10 hover:bg-white/20 backdrop-blur-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white/50 transition-all duration-200 transform hover:scale-105"
               onClick={() => openModal()}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="12" y1="5" x2="12" y2="19"></line>
                 <line x1="5" y1="12" x2="19" y2="12"></line>
               </svg>
-              Add Article
+              <span className="hidden xs:inline">Add Article</span>
             </button>
+            
             <button
               onClick={onLogout}
-              className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-300"
+              className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg transition duration-300"
               aria-label="Logout"
             >
-              Logout
+              <span className="hidden xs:inline">Logout</span>
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 xs:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
             </button>
-
           </div>
         </div>
       </header>
