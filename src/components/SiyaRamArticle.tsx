@@ -53,6 +53,7 @@ const SiyaRamArticle: React.FC<SiyaRamArticleProps> = ({ onLogout }) => {
   });
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [filteredArticles, setFilteredArticles] = useState<Article[]>([]);
+  const [copiedArticleId, setCopiedArticleId] = useState<number | null>(null);
 
   useEffect(() => {
     fetchArticles();
@@ -579,7 +580,7 @@ const SiyaRamArticle: React.FC<SiyaRamArticleProps> = ({ onLogout }) => {
                       type="button"
                       onClick={closeModal}
                       disabled={isUploading}
-                      className="mt-3 w-full inline-flex justify-center rounded-full border border-gray-200 dark:border-gray-600 shadow-md px-5 py-3 bg-white dark:bg-gray-700 text-base font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:col-start-1 sm:text-sm transition-colors duration-200"
+                      className="mt-3 w-full inline-flex justify-center rounded-full border border-gray-200 dark:border-gray-600 shadow-md px-5 py-3 bg-white dark:bg-gray-700 text-base font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:col-start-1 sm:text-sm transition-all duration-200"
                     >
                       Cancel
                     </button>
@@ -750,6 +751,59 @@ const SiyaRamArticle: React.FC<SiyaRamArticleProps> = ({ onLogout }) => {
     setIsDarkMode(prev => !prev);
   };
 
+  const copyToClipboard = (text: string, articleId: number) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedArticleId(articleId);
+      setTimeout(() => setCopiedArticleId(null), 1500);
+    });
+  };
+
+  // Function to download all images of an article
+  const downloadAllImages = async (article: Article) => {
+    if (!article.images || article.images.length === 0) {
+      alert('No images available to download');
+      return;
+    }
+    
+    try {
+      // Show loading indicator or notification if you want
+      
+      // Download images sequentially
+      for (let i = 0; i < article.images.length; i++) {
+        const image = article.images[i];
+        const imageUrl = `http://localhost:5000/${image.path}`;
+        
+        // Fetch the image as a blob
+        const response = await fetch(imageUrl);
+        const blob = await response.blob();
+        
+        // Create a blob URL
+        const blobUrl = window.URL.createObjectURL(blob);
+        
+        // Create a link element
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = `article-${article.article_number}-image-${i+1}.jpg`;
+        
+        // Trigger download
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Clean up by revoking the blob URL
+        window.URL.revokeObjectURL(blobUrl);
+        
+        // Add a small delay between downloads
+        if (i < article.images.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 300));
+        }
+      }
+    } catch (error) {
+      console.error('Error downloading images:', error);
+      alert('Failed to download images. Please try again.');
+    }
+  };
+
   const renderArticleList = () => {
     if (isLoadingList) {
       return (
@@ -839,10 +893,27 @@ const SiyaRamArticle: React.FC<SiyaRamArticleProps> = ({ onLogout }) => {
           <div key={article.id} className="group bg-white dark:bg-gray-800 overflow-hidden shadow-xl rounded-2xl border border-gray-100 dark:border-gray-700 transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 backdrop-blur-sm bg-white/90 dark:bg-gray-800/90">
             <div className="px-6 py-5 sm:px-8 border-b border-gray-100 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-750">
               <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center">
-                <span className="mr-2">Article #</span>
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-600 to-blue-600 dark:from-violet-400 dark:to-blue-400">
-                  {article.article_number}
+                  #{article.article_number}
                 </span>
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    copyToClipboard(article.article_number, article.id);
+                  }}
+                  className="ml-2 p-1 rounded-md text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  title="Copy article number"
+                >
+                  {copiedArticleId === article.id ? (
+                    <svg className="h-4 w-4 text-green-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                  ) : (
+                    <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                  )}
+                </button>
               </h3>
               <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 flex items-center">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -899,6 +970,20 @@ const SiyaRamArticle: React.FC<SiyaRamArticleProps> = ({ onLogout }) => {
                 </svg>
                 Edit
               </button>
+              {/* Download button */}
+              {article.images && article.images.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => downloadAllImages(article)}
+                  className="inline-flex items-center px-4 py-2 border border-blue-200 dark:border-blue-700 shadow-md text-sm font-medium rounded-full text-blue-700 dark:text-blue-300 bg-white dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200"
+                  aria-label="Download images"
+                >
+                  <svg className="h-4 w-4 mr-1.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  Download
+                </button>
+              )}
               <button
                 className="inline-flex items-center px-4 py-2 border border-red-100 dark:border-red-900/30 shadow-md text-sm font-medium rounded-full text-red-700 dark:text-red-400 bg-white dark:bg-gray-800 hover:bg-red-50 dark:hover:bg-red-900/20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200"
                 onClick={() => openDeleteModal(article.id)}
@@ -999,7 +1084,6 @@ const SiyaRamArticle: React.FC<SiyaRamArticleProps> = ({ onLogout }) => {
         <div className="flex justify-between items-center mb-10">
           <div>
             <h2 className="text-3xl font-bold text-gray-800 dark:text-white tracking-tight">Your Articles</h2>
-            <p className="text-gray-500 dark:text-gray-400 mt-1">Manage and upload your content</p>
           </div>
           <div className="flex space-x-3">
             {/* Mobile search button */}
@@ -1014,7 +1098,7 @@ const SiyaRamArticle: React.FC<SiyaRamArticleProps> = ({ onLogout }) => {
             </button>
 
             <button
-              className="inline-flex items-center px-4 py-2 border border-gray-200 dark:border-gray-700 shadow-lg text-sm font-medium rounded-full text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200 transform hover:scale-105"
+              className="inline-flex items-center px-4 py-2 border border-gray-200 dark:border-gray-700 shadow-lg text-sm font-medium rounded-full text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200"
               onClick={fetchArticles}
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
