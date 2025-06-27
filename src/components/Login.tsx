@@ -34,6 +34,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, isAuthenticated }) => {
       const loginSuccessful = onLogin(email, password);
       
       if (!loginSuccessful) {
+        setError('Invalid credentials');
       }
       setIsLoading(false);
     }, 800);
