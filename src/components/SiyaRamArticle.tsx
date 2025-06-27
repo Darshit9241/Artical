@@ -13,7 +13,11 @@ interface Article {
   images: Image[];
 }
 
-const SiyaRamArticle: React.FC = () => {
+interface SiyaRamArticleProps {
+  onLogout: () => void;
+}
+
+const SiyaRamArticle: React.FC<SiyaRamArticleProps> = ({ onLogout }) => {
   // Article states
   const [articles, setArticles] = useState<Article[]>([]);
   const [isLoadingList, setIsLoadingList] = useState<boolean>(false);
@@ -27,7 +31,7 @@ const SiyaRamArticle: React.FC = () => {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState<boolean>(false);
-  
+
   // Edit and Delete states
   const [editMode, setEditMode] = useState<boolean>(false);
   const [editArticleId, setEditArticleId] = useState<number | null>(null);
@@ -35,25 +39,25 @@ const SiyaRamArticle: React.FC = () => {
   const [deleteArticleId, setDeleteArticleId] = useState<number | null>(null);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
-  
+
   // Image viewer states
   const [isImageViewerOpen, setIsImageViewerOpen] = useState<boolean>(false);
   const [currentImages, setCurrentImages] = useState<Image[]>([]);
   const [currentImageIndex, setCurrentImageIndex] = useState<number>(0);
   const [currentArticleNumber, setCurrentArticleNumber] = useState<string>('');
-  
+
   // New modern features
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
-    return localStorage.getItem('darkMode') === 'true' || 
-           window.matchMedia('(prefers-color-scheme: dark)').matches;
+    return localStorage.getItem('darkMode') === 'true' ||
+      window.matchMedia('(prefers-color-scheme: dark)').matches;
   });
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [filteredArticles, setFilteredArticles] = useState<Article[]>([]);
-  
+
   useEffect(() => {
     fetchArticles();
   }, []);
-  
+
   // Apply dark mode to document
   useEffect(() => {
     if (isDarkMode) {
@@ -63,38 +67,38 @@ const SiyaRamArticle: React.FC = () => {
     }
     localStorage.setItem('darkMode', isDarkMode.toString());
   }, [isDarkMode]);
-  
+
   // Filter articles based on search query
   useEffect(() => {
     if (searchQuery.trim() === '') {
       setFilteredArticles(articles);
     } else {
-      const filtered = articles.filter(article => 
+      const filtered = articles.filter(article =>
         article.article_number.toLowerCase().includes(searchQuery.toLowerCase())
       );
       setFilteredArticles(filtered);
     }
   }, [searchQuery, articles]);
-  
+
   const fetchArticles = async () => {
     setIsLoadingList(true);
     setListError(null);
-    
+
     try {
       const response = await fetch('http://localhost:5000/api/articles');
-      
+
       // Check content type to avoid JSON parse errors
       const contentType = response.headers.get('content-type');
-      
+
       if (!contentType || !contentType.includes('application/json')) {
         throw new Error(`Server returned non-JSON response: ${await response.text()}`);
       }
-      
+
       if (!response.ok) {
         const data = await response.json();
         throw new Error(data.message || 'Failed to fetch articles');
       }
-      
+
       const data = await response.json();
       setArticles(data);
     } catch (err: any) {
@@ -110,7 +114,7 @@ const SiyaRamArticle: React.FC = () => {
       setIsLoadingList(false);
     }
   };
-  
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString();
   };
@@ -164,44 +168,44 @@ const SiyaRamArticle: React.FC = () => {
   const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setIsDragging(false);
-    
+
     if (e.dataTransfer.files) {
       const filesArray = Array.from(e.dataTransfer.files);
       const imageFiles = filesArray.filter(file => file.type.startsWith('image/'));
-      
+
       if (imageFiles.length > 0) {
         setSelectedFiles(prev => [...prev, ...imageFiles]);
       }
     }
   }, []);
-  
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!articleNumber.trim()) {
       setUploadError('Please enter an article number');
       return;
     }
-    
+
     if (!editMode && selectedFiles.length === 0) {
       setUploadError('Please select at least one image');
       return;
     }
-    
+
     setIsUploading(true);
     setUploadError(null);
     setUploadSuccess(null);
-    
+
     const formData = new FormData();
     formData.append('articleNumber', articleNumber);
-    
+
     selectedFiles.forEach(file => {
       formData.append('images', file);
     });
-    
+
     try {
       let response;
-      
+
       if (editMode) {
         // Update existing article
         response = await fetch(`http://localhost:5000/api/articles/${editArticleId}`, {
@@ -215,25 +219,25 @@ const SiyaRamArticle: React.FC = () => {
           body: formData,
         });
       }
-      
+
       // Check content type to avoid JSON parse errors
       const contentType = response.headers.get('content-type');
-      
+
       if (!contentType || !contentType.includes('application/json')) {
         throw new Error(`Server returned non-JSON response: ${await response.text()}`);
       }
-      
+
       const data = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(data.message || 'Failed to upload');
       }
-      
+
       setUploadSuccess(editMode ? 'Article updated successfully!' : 'Article and images uploaded successfully!');
       setArticleNumber('');
       setSelectedFiles([]);
       fetchArticles(); // Refresh the article list after successful upload
-      
+
       // Close modal after short delay to show success message
       setTimeout(() => {
         closeModal();
@@ -251,7 +255,7 @@ const SiyaRamArticle: React.FC = () => {
       setIsUploading(false);
     }
   };
-  
+
   const removeFile = (index: number) => {
     setSelectedFiles(prev => prev.filter((_, i) => i !== index));
   };
@@ -262,34 +266,34 @@ const SiyaRamArticle: React.FC = () => {
     }
     return null;
   };
-  
+
   const openDeleteModal = (articleId: number) => {
     setDeleteArticleId(articleId);
     setIsDeleteModalOpen(true);
     setDeleteError(null);
   };
-  
+
   const closeDeleteModal = () => {
     setIsDeleteModalOpen(false);
     setDeleteArticleId(null);
     setDeleteError(null);
   };
-  
+
   const handleDelete = async () => {
     if (!deleteArticleId) return;
-    
+
     setIsDeleting(true);
     setDeleteError(null);
-    
+
     try {
       const response = await fetch(`http://localhost:5000/api/articles/${deleteArticleId}`, {
         method: 'DELETE',
       });
-      
+
       // Check content type to avoid JSON parse errors
       const contentType = response.headers.get('content-type');
       let data;
-      
+
       if (!response.ok) {
         if (!contentType || !contentType.includes('application/json')) {
           throw new Error(`Server returned non-JSON response: ${await response.text()}`);
@@ -297,7 +301,7 @@ const SiyaRamArticle: React.FC = () => {
         data = await response.json();
         throw new Error(data.message || 'Failed to delete article');
       }
-      
+
       // Remove the deleted article from the state
       setArticles(prev => prev.filter(article => article.id !== deleteArticleId));
       closeDeleteModal();
@@ -314,13 +318,13 @@ const SiyaRamArticle: React.FC = () => {
       setIsDeleting(false);
     }
   };
-  
+
   const renderDeleteModal = () => {
     if (!isDeleteModalOpen) return null;
-    
+
     const article = articles.find(a => a.id === deleteArticleId);
     if (!article) return null;
-    
+
     return (
       <div className="fixed z-50 inset-0 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
         <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
@@ -354,7 +358,7 @@ const SiyaRamArticle: React.FC = () => {
                         </div>
                       </div>
                     )}
-                    
+
                     <p className="text-base text-gray-600 dark:text-gray-300">
                       Are you sure you want to delete Article #{" "}
                       <span className="font-semibold text-gray-900 dark:text-white">{article.article_number}</span>?
@@ -400,7 +404,7 @@ const SiyaRamArticle: React.FC = () => {
 
   const renderArticleModal = () => {
     if (!isModalOpen) return null;
-    
+
     return (
       <div className="fixed inset-0 overflow-y-auto z-50" aria-labelledby="modal-title" role="dialog" aria-modal="true">
         <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
@@ -413,8 +417,8 @@ const SiyaRamArticle: React.FC = () => {
                 <h3 className="text-2xl leading-6 font-bold text-gray-900 dark:text-white" id="modal-title">
                   {editMode ? 'Edit Article' : 'Add New Article'}
                 </h3>
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   className="bg-white dark:bg-gray-700 rounded-full p-2 text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200 transform hover:rotate-90"
                   onClick={closeModal}
                 >
@@ -424,7 +428,7 @@ const SiyaRamArticle: React.FC = () => {
                   </svg>
                 </button>
               </div>
-              
+
               <div className="mt-5">
                 {uploadError && (
                   <div className="mb-5 bg-red-50 dark:bg-red-900/20 border-l-4 border-red-400 p-4 rounded-r-lg animate-fadeIn">
@@ -464,7 +468,7 @@ const SiyaRamArticle: React.FC = () => {
                     </div>
                   </div>
                 )}
-                
+
                 <form onSubmit={handleSubmit}>
                   <div className="mb-5">
                     <label htmlFor="articleNumber" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Article Number</label>
@@ -479,8 +483,8 @@ const SiyaRamArticle: React.FC = () => {
                       className="w-full px-4 py-2.5 rounded-xl shadow-sm border border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white transition-colors duration-200"
                     />
                   </div>
-                  
-                  <div 
+
+                  <div
                     className={`mt-5 flex justify-center px-6 pt-5 pb-6 border-2 ${isDragging ? 'border-indigo-300 bg-indigo-50 dark:border-indigo-600 dark:bg-indigo-900/20' : 'border-gray-200 dark:border-gray-700 border-dashed'} rounded-xl transition-all duration-200 hover:border-indigo-300 dark:hover:border-indigo-600`}
                     onDragOver={handleDragOver}
                     onDragLeave={handleDragLeave}
@@ -513,7 +517,7 @@ const SiyaRamArticle: React.FC = () => {
                       )}
                     </div>
                   </div>
-                  
+
                   {selectedFiles.length > 0 && (
                     <div className="mt-5">
                       <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Selected Images</h4>
@@ -534,7 +538,7 @@ const SiyaRamArticle: React.FC = () => {
                                 )}
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                               </div>
-                              <button 
+                              <button
                                 type="button"
                                 onClick={() => removeFile(index)}
                                 disabled={isUploading}
@@ -552,7 +556,7 @@ const SiyaRamArticle: React.FC = () => {
                       </div>
                     </div>
                   )}
-                  
+
                   <div className="mt-6 sm:grid sm:grid-cols-2 sm:gap-4 sm:grid-flow-row-dense">
                     <button
                       type="submit"
@@ -626,7 +630,7 @@ const SiyaRamArticle: React.FC = () => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!isImageViewerOpen) return;
-      
+
       switch (e.key) {
         case 'ArrowRight':
           if (currentImageIndex < currentImages.length - 1) {
@@ -645,23 +649,23 @@ const SiyaRamArticle: React.FC = () => {
           break;
       }
     };
-    
+
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isImageViewerOpen, currentImageIndex, currentImages.length]);
 
   const renderImageViewer = () => {
     if (!isImageViewerOpen || currentImages.length === 0) return null;
-    
+
     const currentImage = currentImages[currentImageIndex];
-    
+
     return (
-      <div 
+      <div
         className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-xl flex items-center justify-center"
         onClick={closeImageViewer}
       >
         {/* Close button */}
-        <button 
+        <button
           className="absolute top-4 right-4 text-white p-2 rounded-full bg-black/20 hover:bg-black/40 transition-colors z-[110]"
           onClick={closeImageViewer}
           aria-label="Close image viewer"
@@ -670,17 +674,17 @@ const SiyaRamArticle: React.FC = () => {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
-        
+
         {/* Image title */}
         <div className="absolute top-4 left-4 text-white">
           <h3 className="text-xl font-medium">
             Article #{currentArticleNumber} - Image {currentImageIndex + 1} of {currentImages.length}
           </h3>
         </div>
-        
+
         {/* Previous button */}
         {currentImageIndex > 0 && (
-          <button 
+          <button
             className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white p-3 rounded-full bg-black/20 hover:bg-black/40 transition-colors z-[110]"
             onClick={goToPrevImage}
             aria-label="Previous image"
@@ -690,10 +694,10 @@ const SiyaRamArticle: React.FC = () => {
             </svg>
           </button>
         )}
-        
+
         {/* Next button */}
         {currentImageIndex < currentImages.length - 1 && (
-          <button 
+          <button
             className="absolute right-4 top-1/2 transform -translate-y-1/2 text-white p-3 rounded-full bg-black/20 hover:bg-black/40 transition-colors z-[110]"
             onClick={goToNextImage}
             aria-label="Next image"
@@ -703,32 +707,31 @@ const SiyaRamArticle: React.FC = () => {
             </svg>
           </button>
         )}
-        
+
         {/* Main image */}
         <div className="max-w-[90vw] max-h-[85vh] relative" onClick={e => e.stopPropagation()}>
-          <img 
+          <img
             src={`http://localhost:5000/${currentImage.path}`}
             alt={`Article ${currentArticleNumber} image ${currentImageIndex + 1}`}
             className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl animate-fadeIn"
           />
-          
+
           {/* Thumbnails */}
           {currentImages.length > 1 && (
             <div className="absolute -bottom-16 left-1/2 transform -translate-x-1/2 flex space-x-2 bg-black/30 p-2 rounded-xl overflow-auto max-w-[90vw]">
               {currentImages.map((image, index) => (
                 <button
                   key={image.id}
-                  className={`w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
-                    index === currentImageIndex 
-                      ? 'border-violet-500 scale-110 shadow-lg shadow-violet-500/20' 
-                      : 'border-transparent opacity-60 hover:opacity-100'
-                  }`}
+                  className={`w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${index === currentImageIndex
+                    ? 'border-violet-500 scale-110 shadow-lg shadow-violet-500/20'
+                    : 'border-transparent opacity-60 hover:opacity-100'
+                    }`}
                   onClick={(e) => {
                     e.stopPropagation();
                     setCurrentImageIndex(index);
                   }}
                 >
-                  <img 
+                  <img
                     src={`http://localhost:5000/${image.path}`}
                     alt={`Thumbnail ${index + 1}`}
                     className="w-full h-full object-cover"
@@ -764,7 +767,7 @@ const SiyaRamArticle: React.FC = () => {
         </div>
       );
     }
-    
+
     if (listError) {
       return (
         <div className="bg-white dark:bg-gray-800 shadow-2xl rounded-2xl p-8 text-center border border-gray-100 dark:border-gray-700 backdrop-blur-sm bg-white/50 dark:bg-gray-800/50">
@@ -785,19 +788,19 @@ const SiyaRamArticle: React.FC = () => {
               </ol>
             </div>
           )}
-          <button 
-            onClick={fetchArticles} 
+          <button
+            onClick={fetchArticles}
             className="mt-4 inline-flex items-center px-6 py-3 border border-transparent rounded-full shadow-lg text-base font-medium text-white bg-gradient-to-r from-violet-600 to-blue-600 hover:from-violet-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-300 transform hover:scale-105"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+              <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" />
             </svg>
             Try Again
           </button>
         </div>
       );
     }
-    
+
     if (articles.length === 0 && !searchQuery) {
       return (
         <div className="bg-white dark:bg-gray-800 shadow-2xl rounded-2xl p-12 text-center border border-gray-100 dark:border-gray-700 backdrop-blur-sm bg-white/80 dark:bg-gray-800/80">
@@ -813,8 +816,8 @@ const SiyaRamArticle: React.FC = () => {
           </div>
           <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">No Articles Yet</h3>
           <p className="text-gray-500 dark:text-gray-400 mb-10 max-w-md mx-auto text-lg">It looks like you haven't added any articles yet. Click the button below to get started.</p>
-          <button 
-            onClick={() => openModal()} 
+          <button
+            onClick={() => openModal()}
             className="inline-flex items-center px-6 py-3 border border-transparent rounded-full shadow-lg text-base font-medium text-white bg-gradient-to-r from-violet-600 to-blue-600 hover:from-violet-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-300 transform hover:scale-105"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -826,10 +829,10 @@ const SiyaRamArticle: React.FC = () => {
         </div>
       );
     }
-    
+
     // Use filtered articles when search is active, otherwise use all articles
     const displayedArticles = searchQuery ? filteredArticles : articles;
-    
+
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
         {displayedArticles.map(article => (
@@ -848,20 +851,20 @@ const SiyaRamArticle: React.FC = () => {
                 {formatDate(article.created_at)}
               </p>
             </div>
-            
+
             <div className="p-6 sm:p-8">
               {article.images && article.images.length > 0 ? (
                 <div className="grid grid-cols-2 gap-4">
                   {article.images.map((image, index) => (
-                    <div 
-                      key={index} 
+                    <div
+                      key={index}
                       className="relative h-36 bg-gray-100 dark:bg-gray-700 rounded-xl overflow-hidden shadow-md transition-transform duration-200 hover:scale-105 group-hover:shadow-lg cursor-pointer"
                       onClick={() => openImageViewer(article, index)}
                     >
-                      <img 
-                        src={`http://localhost:5000/${image.path}`} 
+                      <img
+                        src={`http://localhost:5000/${image.path}`}
                         alt={`Image ${index + 1} for Article ${article.article_number}`}
-                        className="w-full h-full object-cover" 
+                        className="w-full h-full object-cover"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
                         <div className="bg-white/20 backdrop-blur-sm p-2 rounded-full transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
@@ -884,9 +887,9 @@ const SiyaRamArticle: React.FC = () => {
                 </div>
               )}
             </div>
-            
+
             <div className="border-t border-gray-100 dark:border-gray-700 px-6 py-4 sm:px-8 flex space-x-3 justify-end bg-gray-50 dark:bg-gray-800/50">
-              <button 
+              <button
                 className="inline-flex items-center px-4 py-2 border border-gray-200 dark:border-gray-700 shadow-md text-sm font-medium rounded-full text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200"
                 onClick={() => openModal(article)}
                 aria-label="Edit article"
@@ -896,7 +899,7 @@ const SiyaRamArticle: React.FC = () => {
                 </svg>
                 Edit
               </button>
-              <button 
+              <button
                 className="inline-flex items-center px-4 py-2 border border-red-100 dark:border-red-900/30 shadow-md text-sm font-medium rounded-full text-red-700 dark:text-red-400 bg-white dark:bg-gray-800 hover:bg-red-50 dark:hover:bg-red-900/20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200"
                 onClick={() => openDeleteModal(article.id)}
                 aria-label="Delete article"
@@ -924,7 +927,7 @@ const SiyaRamArticle: React.FC = () => {
               <img src="/siyaram-lace.png" alt="SiyaRam Logo" className="h-12 w-auto rounded-lg" />
             </div>
           </div>
-          
+
           <div className="flex items-center space-x-4">
             {/* Search Bar */}
             <div className="relative hidden md:block">
@@ -952,7 +955,7 @@ const SiyaRamArticle: React.FC = () => {
                 </button>
               )}
             </div>
-            
+
             {/* Dark Mode Toggle */}
             <button
               onClick={toggleDarkMode}
@@ -969,8 +972,8 @@ const SiyaRamArticle: React.FC = () => {
                 </svg>
               )}
             </button>
-            
-            <button 
+
+            <button
               className="inline-flex items-center px-5 py-2.5 border border-white/20 rounded-full shadow-xl text-sm font-medium text-white bg-white/10 hover:bg-white/20 backdrop-blur-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white/50 transition-all duration-200 transform hover:scale-105"
               onClick={() => openModal()}
             >
@@ -980,10 +983,18 @@ const SiyaRamArticle: React.FC = () => {
               </svg>
               Add Article
             </button>
+            <button
+              onClick={onLogout}
+              className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-300"
+              aria-label="Logout"
+            >
+              Logout
+            </button>
+
           </div>
         </div>
       </header>
-      
+
       <div className="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center mb-10">
           <div>
@@ -992,7 +1003,7 @@ const SiyaRamArticle: React.FC = () => {
           </div>
           <div className="flex space-x-3">
             {/* Mobile search button */}
-            <button 
+            <button
               className="md:hidden inline-flex items-center px-3 py-2 border border-gray-200 dark:border-gray-700 shadow-lg text-sm font-medium rounded-full text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200"
               onClick={() => document.getElementById('mobileSearch')?.classList.toggle('hidden')}
             >
@@ -1001,19 +1012,19 @@ const SiyaRamArticle: React.FC = () => {
                 <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
               </svg>
             </button>
-            
-            <button 
+
+            <button
               className="inline-flex items-center px-4 py-2 border border-gray-200 dark:border-gray-700 shadow-lg text-sm font-medium rounded-full text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200 transform hover:scale-105"
               onClick={fetchArticles}
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+                <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" />
               </svg>
               Refresh
             </button>
           </div>
         </div>
-        
+
         {/* Mobile search bar, hidden by default */}
         <div id="mobileSearch" className="md:hidden mb-6 hidden">
           <div className="relative">
@@ -1042,7 +1053,7 @@ const SiyaRamArticle: React.FC = () => {
             )}
           </div>
         </div>
-        
+
         {searchQuery && filteredArticles.length === 0 && !isLoadingList && (
           <div className="bg-white dark:bg-gray-800 shadow-xl rounded-xl p-8 text-center">
             <svg className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1058,10 +1069,10 @@ const SiyaRamArticle: React.FC = () => {
             </button>
           </div>
         )}
-        
+
         {renderArticleList()}
       </div>
-      
+
       {renderArticleModal()}
       {renderDeleteModal()}
       {renderImageViewer()}
