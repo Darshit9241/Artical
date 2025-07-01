@@ -32,7 +32,8 @@
     "test": "craco test",
     "eject": "react-scripts eject",
     "server": "node server.js",
-    "dev": "concurrently \"npm run server\" \"npm start\""
+    "dev": "concurrently \"npm run server\" \"npm start\"",
+    "vercel-build": "npm run build"
   },
   "eslintConfig": {
     "extends": [

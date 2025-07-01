@@ -8,19 +8,28 @@ require('dotenv').config();
 
 const app = express();
 const port = process.env.PORT || 5000;
+const isProduction = process.env.NODE_ENV === 'production';
 
+// Configure CORS
 app.use(cors());
 app.use(express.json());
-app.use('/uploads', express.static('uploads'));
+
+// Set up static file serving
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+app.use('/uploads', express.static(uploadDir));
+
+// Serve static files from the React app in production
+if (isProduction) {
+  app.use(express.static(path.join(__dirname, 'build')));
+}
 
 // Configure multer for file storage
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const dir = './uploads';
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    cb(null, dir);
+    cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
     cb(null, Date.now() + path.extname(file.originalname));
@@ -277,8 +286,18 @@ app.get('/api/articles', async (req, res) => {
   }
 });
 
-// Start server
-app.listen(port, async () => {
-  await initDb();
+// In production, serve the React app for any unknown paths
+if (isProduction) {
+  app.get('*', (req, res) => {
+    // Exclude API routes
+    if (!req.path.startsWith('/api/')) {
+      res.sendFile(path.join(__dirname, 'build', 'index.html'));
+    }
+  });
+}
+
+// Start the server
+app.listen(port, () => {
   console.log(`Server running on port ${port}`);
+  initDb().catch(console.error);
 }); 

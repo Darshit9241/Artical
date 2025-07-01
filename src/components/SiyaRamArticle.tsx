@@ -157,7 +157,7 @@ const SiyaRamArticle: React.FC<SiyaRamArticleProps> = ({ onLogout }) => {
     setListError(null);
 
     try {
-      const response = await fetch('http://localhost:5000/api/articles');
+      const response = await fetch('/api/articles');
 
       // Check content type to avoid JSON parse errors
       const contentType = response.headers.get('content-type');
@@ -176,7 +176,7 @@ const SiyaRamArticle: React.FC<SiyaRamArticleProps> = ({ onLogout }) => {
     } catch (err: any) {
       console.error('Fetch error:', err);
       if (err.name === 'TypeError' && err.message === 'Failed to fetch') {
-        setListError('Cannot connect to server. Please make sure the server is running at http://localhost:5000');
+        setListError('Cannot connect to server. Please check your network connection.');
       } else if (err.message && err.message.includes('Server returned non-JSON response')) {
         setListError('Server error: Invalid response format. Please check server logs.');
       } else {
@@ -282,13 +282,13 @@ const SiyaRamArticle: React.FC<SiyaRamArticleProps> = ({ onLogout }) => {
 
       if (editMode) {
         // Update existing article
-        response = await fetch(`http://localhost:5000/api/articles/${editArticleId}`, {
+        response = await fetch(`/api/articles/${editArticleId}`, {
           method: 'PUT',
           body: formData,
         });
       } else {
         // Create new article
-        response = await fetch('http://localhost:5000/api/articles', {
+        response = await fetch('/api/articles', {
           method: 'POST',
           body: formData,
         });
@@ -319,12 +319,11 @@ const SiyaRamArticle: React.FC<SiyaRamArticleProps> = ({ onLogout }) => {
     } catch (err: any) {
       console.error('Upload error:', err);
       if (err.name === 'TypeError' && err.message === 'Failed to fetch') {
-        setUploadError('Cannot connect to server. Please make sure the server is running at http://localhost:5000');
-      } else if (err.message && err.message.includes('Server returned non-JSON response')) {
-        setUploadError('Server error: Invalid response format. Please check server logs.');
+        setUploadError('Cannot connect to server. Please check your network connection.');
       } else {
-        setUploadError(err.message || 'Failed to upload. Please try again.');
+        setUploadError(err.message || 'Failed to upload article. Please try again.');
       }
+      setIsUploading(false);
     } finally {
       setIsUploading(false);
     }
@@ -365,7 +364,7 @@ const SiyaRamArticle: React.FC<SiyaRamArticleProps> = ({ onLogout }) => {
     setDeleteError(null);
 
     try {
-      const response = await fetch(`http://localhost:5000/api/articles/${deleteArticleId}`, {
+      const response = await fetch(`/api/articles/${deleteArticleId}`, {
         method: 'DELETE',
       });
 
@@ -387,7 +386,7 @@ const SiyaRamArticle: React.FC<SiyaRamArticleProps> = ({ onLogout }) => {
     } catch (err: any) {
       console.error('Delete error:', err);
       if (err.name === 'TypeError' && err.message === 'Failed to fetch') {
-        setDeleteError('Cannot connect to server. Please make sure the server is running at http://localhost:5000');
+        setDeleteError('Cannot connect to server. Please check your network connection.');
       } else if (err.message && err.message.includes('Server returned non-JSON response')) {
         setDeleteError('Server error: Invalid response format. Please check server logs.');
       } else {
@@ -799,7 +798,7 @@ const SiyaRamArticle: React.FC<SiyaRamArticleProps> = ({ onLogout }) => {
         {/* Main image */}
         <div className="max-w-[90vw] max-h-[85vh] relative" onClick={e => e.stopPropagation()}>
           <img
-            src={`http://localhost:5000/${currentImage.path}`}
+            src={`/${currentImage.path}`}
             alt={`Article ${currentArticleNumber} image ${currentImageIndex + 1}`}
             className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl animate-fadeIn"
           />
@@ -820,7 +819,7 @@ const SiyaRamArticle: React.FC<SiyaRamArticleProps> = ({ onLogout }) => {
                   }}
                 >
                   <img
-                    src={`http://localhost:5000/${image.path}`}
+                    src={`/${image.path}`}
                     alt={`Thumbnail ${index + 1}`}
                     className="w-full h-full object-cover"
                   />
@@ -858,7 +857,7 @@ const SiyaRamArticle: React.FC<SiyaRamArticleProps> = ({ onLogout }) => {
       // Download images sequentially
       for (let i = 0; i < article.images.length; i++) {
         const image = article.images[i];
-        const imageUrl = `http://localhost:5000/${image.path}`;
+        const imageUrl = `/${image.path}`;
         
         // Fetch the image as a blob
         const response = await fetch(imageUrl);
@@ -1036,7 +1035,7 @@ const SiyaRamArticle: React.FC<SiyaRamArticleProps> = ({ onLogout }) => {
                       onClick={() => openImageViewer(article, index)}
                     >
                       <img
-                        src={`http://localhost:5000/${image.path}`}
+                        src={`/${image.path}`}
                         alt={`Image ${index + 1} for Article ${article.article_number}`}
                         className="w-full h-full object-cover"
                       />
