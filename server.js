@@ -9,36 +9,18 @@ require('dotenv').config();
 const app = express();
 const port = process.env.PORT || 5000;
 
-// Configure CORS for development and production
-app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? process.env.VERCEL_URL || 'https://your-vercel-domain.vercel.app' 
-    : 'http://localhost:3000'
-}));
-
+app.use(cors());
 app.use(express.json());
-
-// Serve static files in production
-if (process.env.NODE_ENV === 'production') {
-  // Serve the React build files
-  app.use(express.static(path.join(__dirname, 'build')));
-}
-
-// Ensure uploads directory exists
-const uploadsDir = process.env.NODE_ENV === 'production' 
-  ? path.join('/tmp', 'uploads') // Use /tmp for Vercel
-  : './uploads';
-
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
-
-app.use('/uploads', express.static(uploadsDir));
+app.use('/uploads', express.static('uploads'));
 
 // Configure multer for file storage
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, uploadsDir);
+    const dir = './uploads';
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    cb(null, dir);
   },
   filename: (req, file, cb) => {
     cb(null, Date.now() + path.extname(file.originalname));
@@ -295,18 +277,8 @@ app.get('/api/articles', async (req, res) => {
   }
 });
 
-// Add a catch-all route to serve the React app in production
-if (process.env.NODE_ENV === 'production') {
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'build', 'index.html'));
-  });
-}
-
-// Initialize database and start server
-initDb().then(() => {
-  app.listen(port, () => {
-    console.log(`Server running on port ${port}`);
-  });
-}).catch(err => {
-  console.error('Failed to initialize database:', err);
+// Start server
+app.listen(port, async () => {
+  await initDb();
+  console.log(`Server running on port ${port}`);
 }); 
