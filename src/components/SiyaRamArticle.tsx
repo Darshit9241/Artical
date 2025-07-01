@@ -157,7 +157,7 @@ const SiyaRamArticle: React.FC<SiyaRamArticleProps> = ({ onLogout }) => {
     setListError(null);
 
     try {
-      const response = await fetch('http://localhost:5000/api/articles');
+      const response = await fetch('/api/articles');
 
       // Check content type to avoid JSON parse errors
       const contentType = response.headers.get('content-type');
@@ -282,13 +282,13 @@ const SiyaRamArticle: React.FC<SiyaRamArticleProps> = ({ onLogout }) => {
 
       if (editMode) {
         // Update existing article
-        response = await fetch(`http://localhost:5000/api/articles/${editArticleId}`, {
+        response = await fetch(`/api/articles/${editArticleId}`, {
           method: 'PUT',
           body: formData,
         });
       } else {
         // Create new article
-        response = await fetch('http://localhost:5000/api/articles', {
+        response = await fetch('/api/articles', {
           method: 'POST',
           body: formData,
         });
@@ -319,7 +319,7 @@ const SiyaRamArticle: React.FC<SiyaRamArticleProps> = ({ onLogout }) => {
     } catch (err: any) {
       console.error('Upload error:', err);
       if (err.name === 'TypeError' && err.message === 'Failed to fetch') {
-        setUploadError('Cannot connect to server. Please make sure the server is running at http://localhost:5000');
+        setUploadError('Cannot connect to server. Please check your internet connection.');
       } else if (err.message && err.message.includes('Server returned non-JSON response')) {
         setUploadError('Server error: Invalid response format. Please check server logs.');
       } else {
@@ -365,7 +365,7 @@ const SiyaRamArticle: React.FC<SiyaRamArticleProps> = ({ onLogout }) => {
     setDeleteError(null);
 
     try {
-      const response = await fetch(`http://localhost:5000/api/articles/${deleteArticleId}`, {
+      const response = await fetch(`/api/articles/${deleteArticleId}`, {
         method: 'DELETE',
       });
 
@@ -387,7 +387,7 @@ const SiyaRamArticle: React.FC<SiyaRamArticleProps> = ({ onLogout }) => {
     } catch (err: any) {
       console.error('Delete error:', err);
       if (err.name === 'TypeError' && err.message === 'Failed to fetch') {
-        setDeleteError('Cannot connect to server. Please make sure the server is running at http://localhost:5000');
+        setDeleteError('Cannot connect to server. Please check your internet connection.');
       } else if (err.message && err.message.includes('Server returned non-JSON response')) {
         setDeleteError('Server error: Invalid response format. Please check server logs.');
       } else {
