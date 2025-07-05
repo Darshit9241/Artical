@@ -117,7 +117,7 @@ app.post('/api/articles', upload.array('images', 5), async (req, res) => {
     for (const file of files) {
       await client.query(
         'INSERT INTO images (article_id, image_path) VALUES ($1, $2)',
-        [articleId, file.path.split('\\').pop()]
+        [articleId, file.path.split('/').pop()]
       );
     }
     
@@ -183,11 +183,9 @@ app.put('/api/articles/:id', upload.array('images', 5), async (req, res) => {
       
       // Add new images
       for (const file of files) {
-        console.log(file.path.split('\\').pop());
-      
         await client.query(
           'INSERT INTO images (article_id, image_path) VALUES ($1, $2)',
-          [articleId, file.path.split('\\').pop()]
+          [articleId, file.path.split('/').pop()]
         );
       }
       
