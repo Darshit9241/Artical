@@ -24,9 +24,9 @@ if (!fs.existsSync(uploadDir)) {
 app.use(express.static(uploadDir));
 
 // Serve static files from the React app in production
-if (isProduction) {
-  app.use(express.static(path.join(__dirname, 'build')));
-}
+// if (isProduction) {
+//   app.use(express.static(path.join(__dirname, 'build')));
+// }
 
 // Configure multer for file storage
 const storage = multer.diskStorage({
