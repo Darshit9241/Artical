@@ -157,7 +157,7 @@ const SiyaRamArticle: React.FC<SiyaRamArticleProps> = ({ onLogout }) => {
     setListError(null);
 
     try {
-      const response = await fetch('/api/articles');
+      const response = await fetch(process.env.REACT_APP_BASE_URL+'/api/articles');
 
       // Check content type to avoid JSON parse errors
       const contentType = response.headers.get('content-type');
@@ -282,13 +282,13 @@ const SiyaRamArticle: React.FC<SiyaRamArticleProps> = ({ onLogout }) => {
 
       if (editMode) {
         // Update existing article
-        response = await fetch(`/api/articles/${editArticleId}`, {
+        response = await fetch(`${process.env.REACT_APP_BASE_URL}/api/articles/${editArticleId}`, {
           method: 'PUT',
           body: formData,
         });
       } else {
         // Create new article
-        response = await fetch('/api/articles', {
+        response = await fetch(process.env.REACT_APP_BASE_URL+'/api/articles', {
           method: 'POST',
           body: formData,
         });
@@ -364,7 +364,7 @@ const SiyaRamArticle: React.FC<SiyaRamArticleProps> = ({ onLogout }) => {
     setDeleteError(null);
 
     try {
-      const response = await fetch(`/api/articles/${deleteArticleId}`, {
+      const response = await fetch(`${process.env.REACT_APP_BASE_URL}/api/articles/${deleteArticleId}`, {
         method: 'DELETE',
       });
 
@@ -798,7 +798,7 @@ const SiyaRamArticle: React.FC<SiyaRamArticleProps> = ({ onLogout }) => {
         {/* Main image */}
         <div className="max-w-[90vw] max-h-[85vh] relative" onClick={e => e.stopPropagation()}>
           <img
-            src={`/${currentImage.path}`}
+            src={`${process.env.REACT_APP_BASE_URL}/${currentImage.path}`}
             alt={`Article ${currentArticleNumber} image ${currentImageIndex + 1}`}
             className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl animate-fadeIn"
           />
@@ -819,7 +819,7 @@ const SiyaRamArticle: React.FC<SiyaRamArticleProps> = ({ onLogout }) => {
                   }}
                 >
                   <img
-                    src={`/${image.path}`}
+                    src={`${process.env.REACT_APP_BASE_URL}/${image.path}`}
                     alt={`Thumbnail ${index + 1}`}
                     className="w-full h-full object-cover"
                   />
@@ -1035,7 +1035,7 @@ const SiyaRamArticle: React.FC<SiyaRamArticleProps> = ({ onLogout }) => {
                       onClick={() => openImageViewer(article, index)}
                     >
                       <img
-                        src={`/${image.path}`}
+                        src={`${process.env.REACT_APP_BASE_URL}/${image.path}`}
                         alt={`Image ${index + 1} for Article ${article.article_number}`}
                         className="w-full h-full object-cover"
                       />

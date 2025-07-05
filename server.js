@@ -4,6 +4,7 @@ const multer = require('multer');
 const path = require('path');
 const { Client } = require('@neondatabase/serverless');
 const fs = require('fs');
+global.WebSocket = require('ws');
 require('dotenv').config();
 
 const app = express();
@@ -19,7 +20,7 @@ const uploadDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
-app.use('/uploads', express.static(uploadDir));
+app.use(express.static(uploadDir));
 
 // Serve static files from the React app in production
 if (isProduction) {
@@ -52,8 +53,8 @@ const upload = multer({
   }
 });
 
-// Initialize Neon database client
-const client = new Client(process.env.DATABASE_URL || 'postgres://placeholder:placeholder@placeholder.neon.tech/placeholder');
+
+const client = new Client(process.env.DATABASE_URL);
 
 // Connect to database on server start
 async function initDb() {
@@ -113,7 +114,7 @@ app.post('/api/articles', upload.array('images', 5), async (req, res) => {
     for (const file of files) {
       await client.query(
         'INSERT INTO images (article_id, image_path) VALUES ($1, $2)',
-        [articleId, file.path]
+        [articleId, file.path.split('\\').pop()]
       );
     }
     
@@ -137,7 +138,7 @@ app.put('/api/articles/:id', upload.array('images', 5), async (req, res) => {
   const articleId = req.params.id;
   const { articleNumber } = req.body;
   const files = req.files;
-  
+  console.log(files);
   if (!articleNumber) {
     return res.status(400).json({ message: 'Article number is required' });
   }
@@ -179,9 +180,11 @@ app.put('/api/articles/:id', upload.array('images', 5), async (req, res) => {
       
       // Add new images
       for (const file of files) {
+        console.log(file.path.split('\\').pop());
+      
         await client.query(
           'INSERT INTO images (article_id, image_path) VALUES ($1, $2)',
-          [articleId, file.path]
+          [articleId, file.path.split('\\').pop()]
         );
       }
       
