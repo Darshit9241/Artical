@@ -17,7 +17,7 @@ app.use(express.json());
 
 // Set up static file serving
 
-const uploadDir = path.join('/tmp', 'uploads');
+const uploadDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
@@ -31,6 +31,8 @@ app.use(express.static(uploadDir));
 // Configure multer for file storage
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
+    console.log(uploadDir);
+    
     cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
