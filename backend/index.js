@@ -16,7 +16,7 @@ app.use(cors());
 app.use(express.json());
 
 // Set up static file serving
-const uploadDir = path.join(__dirname, 'uploads');
+const uploadDir = './uploads';
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
