@@ -799,7 +799,7 @@ const SiyaRamArticle: React.FC<SiyaRamArticleProps> = ({ onLogout }) => {
         <div className="max-w-[90vw] max-h-[85vh] relative" onClick={e => e.stopPropagation()}>
           <img
             src={`${process.env.REACT_APP_BASE_URL}/${currentImage.path}`}
-            alt={`Article ${currentArticleNumber} image ${currentImageIndex + 1}`}
+            alt={`Article ${currentArticleNumber} ${currentImageIndex + 1}`}
             className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl animate-fadeIn"
           />
 
@@ -820,7 +820,7 @@ const SiyaRamArticle: React.FC<SiyaRamArticleProps> = ({ onLogout }) => {
                 >
                   <img
                     src={`${process.env.REACT_APP_BASE_URL}/${image.path}`}
-                    alt={`Thumbnail ${index + 1}`}
+                    alt={`${index + 1} for Article ${currentArticleNumber}`}
                     className="w-full h-full object-cover"
                   />
                 </button>

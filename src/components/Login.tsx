@@ -102,9 +102,9 @@ const Login: React.FC<LoginProps> = ({ onLogin, isAuthenticated }) => {
             </div>
 
             <div className="text-sm">
-              <a href="#" className="font-medium text-indigo-600 hover:text-indigo-500 transition duration-150 ease-in-out">
+              <button type="button" className="font-medium text-indigo-600 hover:text-indigo-500 transition duration-150 ease-in-out underline focus:outline-none">
                 Forgot your password?
-              </a>
+              </button>
             </div>
           </div>
 
@@ -139,9 +139,9 @@ const Login: React.FC<LoginProps> = ({ onLogin, isAuthenticated }) => {
           <div className="text-center mt-4">
             <p className="text-sm text-gray-600">
               Don't have an account?{' '}
-              <a href="#" className="font-medium text-indigo-600 hover:text-indigo-500 transition duration-150 ease-in-out">
+              <button type="button" className="font-medium text-indigo-600 hover:text-indigo-500 transition duration-150 ease-in-out underline focus:outline-none">
                 Sign up
-              </a>
+              </button>
             </p>
           </div>
         </form>
