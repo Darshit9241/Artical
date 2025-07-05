@@ -1036,7 +1036,7 @@ const SiyaRamArticle: React.FC<SiyaRamArticleProps> = ({ onLogout }) => {
                     >
                       <img
                         src={`${process.env.REACT_APP_BASE_URL}/${image.path}`}
-                        alt={`Image ${index + 1} for Article ${article.article_number}`}
+                        alt={`Article ${index + 1} for Article ${article.article_number}`}
                         className="w-full h-full object-cover"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
