@@ -303,4 +303,6 @@ if (isProduction) {
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
   initDb().catch(console.error);
-}); 
+});
+
+module.exports = app; 
