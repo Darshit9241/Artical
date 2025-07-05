@@ -270,7 +270,9 @@ app.delete('/api/articles/:id', async (req, res) => {
     res.status(500).json({ message: 'Failed to delete article', error: error.message });
   }
 });
-
+app.get("/api/hello", (req, res) => {
+  res.json({ message: "Hello from Vercel!" });
+});
 // API endpoint to get all articles with images
 app.get('/api/articles', async (req, res) => {
   try {
